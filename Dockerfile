@@ -14,15 +14,15 @@ RUN apt-get update && apt-get install -y \
     libsnmp-dev snmp \
     libxslt-dev \
     libxml2-dev \
-    libcurl4-openssl-dev \ # Added for curl
+    libcurl4-openssl-dev \
     unzip \
     git \
     wget \
     nano \
     cron \
     composer \
-    iputils-ping \ # Added for nc (netcat) if not available by default for healthchecks/waits
-    netcat-openbsd \   # Added for nc (netcat)
+    iputils-ping \
+    netcat-openbsd \
     && rm -rf /var/lib/apt/lists/*
 
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
