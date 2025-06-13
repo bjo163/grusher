@@ -20,10 +20,12 @@ RUN apt-get update && apt-get install -y \
     wget \
     nano \
     cron \
-    composer \
     iputils-ping \
     netcat-openbsd \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Composer manually
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) \
