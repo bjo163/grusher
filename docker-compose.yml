@@ -1,0 +1,97 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: grusher-web
+    ports:
+      - "${WEB_HOST_PORT:-8080}:80" # Default to 8080 if WEB_HOST_PORT is not set in .env
+    volumes:
+      - ./grusher_app_data:/var/www/html  # Changed from ./:/var/www/html
+      # Add a volume for apache logs if desired
+      # - ./logs/apache:/var/log/apache2
+    env_file:
+      - .env
+    environment:
+      - APACHE_RUN_USER=www-data
+      - APACHE_RUN_GROUP=www-data
+      # Pass DB and Memcached hostnames for installer and runtime
+      - DB_HOST=${DB_HOST:-db}
+      - MEMCACHED_HOST=${MEMCACHED_HOST:-memcached}
+      # Ensure other necessary vars from .env are available if needed directly by entrypoint/apache
+      - LICENSE_KEY=${LICENSE_KEY}
+      - GRUSHER_APP_URL=${GRUSHER_APP_URL:-http://localhost:8080/}
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-grusher}
+      - MYSQL_USER=${MYSQL_USER:-grusher}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-grusherpassword}
+      - DB_PORT=${DB_PORT:-3306}
+      - MEMCACHED_PORT=${MEMCACHED_PORT:-11211}
+      - GRUSHER_WS_KEY=${GRUSHER_WS_KEY}
+      - GRUSHER_WS_INTERNAL_PORT=${GRUSHER_WS_INTERNAL_PORT:-8081}
+      - GRUSHER_WS_PORT_FOR_WEB=${GRUSHER_WS_PORT_FOR_WEB:-8081}
+      - GRUSHER_WS_URL=${GRUSHER_WS_URL} # Added this line
+    depends_on:
+      db:
+        condition: service_healthy # Wait for db to be healthy
+      memcached:
+        condition: service_started # memcached doesn't have a simple healthcheck by default
+    restart: unless-stopped
+
+  db:
+    image: mariadb:10.6 # Grusher docs mention MariaDB 10.3+, 10.6 is a good LTS
+    container_name: grusher-db
+    restart: always
+    ports: # Optional: expose DB port to host for direct access if needed
+      - "${DB_HOST_PORT:-33066}:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-supersecretrootpassword}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-grusher}
+      MYSQL_USER: ${MYSQL_USER:-grusher}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-grusherpassword}
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "${MYSQL_USER:-grusher}", "-p${MYSQL_PASSWORD:-grusherpassword}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  memcached:
+    image: memcached:1.6-alpine
+    container_name: grusher-memcached
+    restart: always
+    ports: # Optional: expose memcached port to host for debugging if needed
+      - "${MEMCACHED_HOST_PORT:-11211}:11211" # Exposes on host's 11211 by default
+    environment:
+      - MEMCACHED_MEMORY_LIMIT=${MEMCACHED_MEMORY_LIMIT:-64} # Default 64MB
+
+  websocket:
+    build:
+      context: .
+      dockerfile: Dockerfile # Uses the same image as web
+    container_name: grusher-websocket
+    restart: unless-stopped
+    ports:
+      - "${WEBSOCKET_HOST_PORT:-8081}:${GRUSHER_WS_INTERNAL_PORT:-8081}" # Map internal WS port to a host port
+    volumes:
+      - ./grusher_app_data:/var/www/html # Changed from ./:/var/www/html
+    env_file:
+      - .env # Load .env for artisan commands and WS server config
+    environment: # Pass specific vars needed for websocket entrypoint/command
+      - DB_HOST=${DB_HOST:-db} # Artisan commands might need DB access
+      - MEMCACHED_HOST=${MEMCACHED_HOST:-memcached}
+      - GRUSHER_WS_INTERNAL_PORT=${GRUSHER_WS_INTERNAL_PORT:-8081}
+    depends_on:
+      web: # Should start after web, implying Grusher code/installation is ready
+        condition: service_started # Or a more specific healthcheck on web if available
+      db:
+        condition: service_healthy
+      memcached:
+        condition: service_started
+    entrypoint: /opt/grusher_tools/entrypoint-websocket.sh # Updated path
+
+volumes:
+  db_data:
+    driver: local

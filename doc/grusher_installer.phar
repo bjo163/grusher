@@ -1,0 +1,467 @@
+<?php
+//set variables
+$SCRIPT_VERSION ="1.2.19";
+$SUPPORT_LINK ="https://t.me/grusher_gviabcua      https://t.me/grusher_gviabcua";
+$UPDATER_URL ="https://gviabcua.in.ua";
+$new_version_get = null;
+$new_subversion_get = null;
+$NEED_PHP = "8.2.0";
+$NEEDED_EXT = array('ctype','curl','gd','gmp','json','fileinfo','ftp','imagick','intl','mbstring','memcache','memcached','mysqli','PDO','sockets','snmp','xml','xmlrpc','xsl','Zend OPcache','zip');
+$SILENT_UPDATE = 0;
+if (isset($argc) and (isset($argv[1])) and ($argv[1] == "silent_update")) {
+	$SILENT_UPDATE =1;
+	echo "Running silent update...\n";
+	sleep(1);
+}
+if (isset($argc) and (isset($argv[1])) and ($argv[1] == "silent_update_dev")) {
+	$SILENT_UPDATE = 2;
+	echo "Running silent DEV update...\n";
+	sleep(1);
+}
+
+echo "\n\n\n"; 
+echo "".str_pad("", 74, "*", STR_PAD_BOTH)."\n";
+echo "***".str_pad("  GRUSHER - Network diagnostic tool  ", 68, " ", STR_PAD_BOTH)."***"."\n"; 
+echo "***".str_pad("  UPDATE TOOLS version $SCRIPT_VERSION  ", 68, " ", STR_PAD_BOTH)."***"."\n"; 
+echo "".str_pad("", 74, "*", STR_PAD_BOTH)."\n"; 
+echo "                          PRODUCT OF UKRAINE\n";
+echo "\033[94m==========================================================================\033[0m\n";
+echo "\033[93m==========================================================================\033[0m\n";
+echo "                          TERMS OF USE
+By using this project or it's source code, for any purpose and in any shape 
+or form, you grant your implicit agreement to all the following statements:
+- You condemn Russia and its military aggression against Ukraine
+- You recognize that Russia is an occupant that unlawfully invaded 
+  a sovereign state
+- You support Ukraine's territorial integrity, including its claims over
+  temporarily occupied territories of Crimea and Donbas
+- You reject false narratives perpetuated by Russian state propaganda
+
+Glory to Ukraine!                                               @gviabcua
+
+support $SUPPORT_LINK\n";
+echo "\033[94m==========================================================================\033[0m\n";
+echo "\033[93m==========================================================================\033[0m\n";
+
+
+switch($SILENT_UPDATE){
+    case 0:
+    	echo "\n\033[32mWhat do you want to do?\033[0m\nType '\033[94minstall\033[0m' to install system or '\033[94mupdate\033[0m' to update system: ";
+    	$handle = fopen ("php://stdin","r");
+    	$whattodo = trim(fgets($handle));
+    break;
+    case 1;
+        $whattodo = 'update';
+    break;
+    case 2;
+        $whattodo = 'update_dev';
+    break;
+}
+
+$PATH = __DIR__;
+
+// needed soft
+echo "\n\033[35m=== Checking needed software \033[0m";
+echo "\n\033[35m=== Checking composer \033[0m";
+$composer_path = trim(shell_exec("which composer"));
+if(strlen($composer_path) > 3){echo "\n\033[32m=== Composer found in $composer_path\033[0m\n";}else{echo("\033[31mERROR - Composer not found. Install from https://getcomposer.org/download/\033[0m").PHP_EOL;close();}
+usleep(50000);
+echo "\n\033[35m=== Checking wget \033[0m";
+$wget_path = trim(shell_exec("which wget"));
+if(strlen($wget_path) > 3){echo "\n\033[32m=== WGET found in $wget_path\033[0m\n";}else{echo("\033[31mERROR - WGET not found. Installing: sudo apt install wget\033[0m").PHP_EOL;close();}
+usleep(50000);
+echo "\n\033[35m=== Checking unzip \033[0m";
+$unzip_path = trim(shell_exec("which unzip"));
+if(strlen($unzip_path) > 3){echo "\n\033[32m=== UNZIP found in $unzip_path\033[0m\n";}else{echo("\033[31mERROR - UNZIP not found. Installing: sudo apt install unzip\033[0m").PHP_EOL;close();}
+usleep(50000);
+
+// Checking needed soft
+
+echo "\n\033[35m=== Checking PHP for version $NEED_PHP \033[0m\n";
+//sleep(1);
+if (version_compare(PHP_VERSION, $NEED_PHP) >= 0) {
+	echo "  \033[32mOK - using version \033[0m".PHP_VERSION. "\n";
+}else{
+	echo "  \033[31mERROR - using version ".PHP_VERSION. " but need $NEED_PHP and high. Update it\033[0m\n";
+	close();
+}
+echo "\n\033[35m=== Checking PHP Extension\033[0m \n";
+$ext_ok = true;
+foreach ($NEEDED_EXT as $ext) {
+	if (extension_loaded($ext)){
+		echo "\033[32m  OK - $ext \033[0m\n";
+		usleep(50000);
+	}else{
+		echo "\033[31m  ERROR - $ext \033[0m\n";
+		$ext_ok = false;
+	}
+}
+if ($ext_ok == false){echo("\033[32m  ERROR - Some PHP Extension is missing. Please install it before\033[0m").PHP_EOL;close();}
+
+echo "\n\033[35m=== Running instalation/updating process \033[0m\n";
+switch($whattodo){
+	case "install":
+		echo "\n\n\033[32mFree licence key you can get on support.\nEnter your licence key:\033[0m ";
+		$handle = fopen ("php://stdin","r");
+		$key = trim(fgets($handle));
+
+		$check_lic = @json_decode(file_get_contents("$UPDATER_URL/updater?key=$key&type=check"));
+		if (isset($check_lic->status) and ($check_lic->status == 1)){
+			echo "\n\033[35m=== Creating config folder\033[0m \n";
+			if (!file_exists($PATH."/config")) {
+			    mkdir($PATH."/config");
+			}
+			echo "\n\033[35mWriting Licence\033[0m\n";
+			$new_version_get = $check_lic->result->new_version;
+			$new_subversion_get = $check_lic->result->new_sub_version;
+			file_put_contents($PATH.'/config/lic.php', '<?php $licence_code = "'.$check_lic->result->licence_code.'";$licence_type = "'.$check_lic->result->type.'";    $licence_valid = "'.$check_lic->result->valid_to.'";  $licence_isp = "'.$check_lic->result->for_who.'";$country = "'.$check_lic->result->country.'";?>');
+		}else{
+			if (isset($check_lic->status) and ($check_lic->status == 0) and isset($check_lic->additional_info)){
+				die ("\n\n\033[31m".$check_lic->additional_info."\033[0m\n\n");
+			}else{
+				die ("\n\033[31mCan't get information from update server\033[0m\n");
+			}
+		}
+
+		echo "\n\n\033[33mEnter your Grusher URL (default localhost - press Enter to use default): \033[0m";
+		$handle = fopen ("php://stdin","r");
+		$grusher_url = trim(fgets($handle));
+		if(strlen($grusher_url) > 0){
+    		if(substr($grusher_url, -1) != "/"){
+    		    if(!preg_match("/http:/i", $grusher_url)){
+    		        $grusher_url = 'http://'.$grusher_url;
+    		    }
+    			$grusher_url = $grusher_url ."/";
+    		}
+		}else{
+		    $grusher_url = 'http://localhost/';
+		}
+		echo "\n\n\033[33mEnter your Database host (default 127.0.0.1 - press Enter to use default): \033[0m";
+		$handle = fopen ("php://stdin","r");
+		$database_host = trim(fgets($handle));
+		if(strlen($database_host) > 0){}else{$database_host = "127.0.0.1";}
+		
+		echo "\n\n\033[33mEnter your Database port (default 3306 - press Enter to use default): \033[0m";
+		$handle = fopen ("php://stdin","r");
+		$database_port = trim(fgets($handle));
+		if(strlen($database_port) > 0){}else{$database_port = "3306";}
+		
+        echo "\n\n\033[33mEnter your Database name (default grusher - press Enter to use default): \033[0m";
+		$handle = fopen ("php://stdin","r");
+		$database_name = trim(fgets($handle));
+		if(strlen($database_name) > 0){}else{$database_name = "grusher";}
+		
+        echo "\n\n\033[33mEnter your Database user (default grusher - press Enter to use default): \033[0m";
+		$handle = fopen ("php://stdin","r");
+		$database_user = trim(fgets($handle));
+		if(strlen($database_user) > 0){}else{$database_user = "grusher";}     
+		
+        echo "\n\n\033[33mEnter your Database password (default grusher - press Enter to use default): \033[0m";
+		$handle = fopen ("php://stdin","r");
+		$database_password = trim(fgets($handle));
+		if(strlen($database_password) > 0){}else{$database_password = "grusher";} 
+		
+        
+        echo "\nIs this information correct:\033[33m\n\nLicence ISP: ".$check_lic->result->for_who."\nLicence type: ".$check_lic->result->type."\nLicence code: ".$check_lic->result->licence_code."\nLicence IP: ".$check_lic->result->licence_ip."\nLicence valid to: ".$check_lic->result->valid_to."\nLicence Country: ".$check_lic->result->country."\nGrusher URL: ". $grusher_url."\n\nGrusher Database Host: ". $database_host."\nGrusher Database Port: ". $database_port."\nGrusher Database Name: ". $database_name."\nGrusher Database User: ". $database_user."\nGrusher Database Pass: ". $database_password."\033[0m\n?\n\033[32mType yes:\033[0m";
+        $handle = fopen ("php://stdin","r");
+        $licence_code = $check_lic->result->licence_code;
+        if(trim(fgets($handle)) != "yes"){
+        	echo "\n Aborted\n\n";
+        	close();
+        }
+
+echo "\n=== Writing config 1 \n";
+$env_config = '
+APP_NAME="Grusher"
+APP_KEY='.generateRandomString(32).'
+APP_DEBUG=false
+APP_URL="'.$grusher_url.'"
+APP_LOCALE=en
+
+DB_CONNECTION=mysql
+DB_HOST='.$database_host.'
+DB_PORT='.$database_port.'
+DB_DATABASE='.$database_name.'
+DB_USERNAME='.$database_user.'
+DB_PASSWORD='.$database_password.'
+
+CACHE_DRIVER=memcached
+CACHE_PREFIX = "gviabcua_grusher"
+TRANSLATE_PREFIX_LOCALE=false
+TRANSLATE_CACHE_TIMEOUT=43200
+
+SESSION_DRIVER=cookie
+
+REDIS_HOST=127.0.0.1
+REDIS_PASSWORD=null
+REDIS_PORT=6379
+
+QUEUE_CONNECTION=sync
+
+MAIL_MAILER=log
+MAIL_LOG_CHANNEL=null
+MAIL_HOST=null
+MAIL_PORT=null
+MAIL_USERNAME=null
+MAIL_PASSWORD=null
+MAIL_ENCRYPTION=null
+MAIL_FROM_ADDRESS=noreply@example.com
+MAIL_FROM_NAME="${APP_NAME}"
+
+ROUTES_CACHE=false
+ASSET_CACHE=true
+LINK_POLICY=detect
+ENABLE_CSRF=true
+DATABASE_TEMPLATES=false
+
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_DEFAULT_REGION=us-east-1
+AWS_BUCKET=
+';
+
+file_put_contents($PATH.'/.env', $env_config);
+
+echo "\n=== Writing config 2 \n";
+$grusher_modules ='
+<?php
+try{include("lic.php");} catch (Exception $e) {}
+if(!isset($licence_code))$licence_code = "0000-0000-0000-0000";
+if(!isset($licence_type))$licence_type = "unknown";
+if(!isset($licence_valid))$licence_valid = "1970-00-00 00:00:00";
+if(!isset($licence_isp))$licence_isp = "Unknown ISP";
+if(!isset($country))$country = "Україна";
+
+return [
+	# you can change it
+    //Setting WEB SOCKET
+    //"web_socket_url" => "localhost", // unkoment this to use other websocket IP
+    "web_socket_key" => "myWebsocketKey",
+    "web_socket_port" => "8080", // This is local ws port
+    "web_socket_port_for_web" => "8080", // Change to 8443 if you are using SSL
+    
+    
+    # do not touch it
+    "licence" => $licence_code,
+    "for_who" => $licence_isp,
+    "licence_type" => $licence_type,
+    "valid_to" => $licence_valid,
+    "country" => $country,
+    "modules" => [
+    	"device_base_update" => 1,
+    	"module_iferrors" => 1,
+    	"module_gotty" => 1,
+    	"module_backup" => 1,
+    	"module_events" => 1,
+    	"module_ws" => 1,
+    	"module_notify" => 1,
+    	"module_device_discovering" => 1,
+    	"module_onu_discovering" => 1,
+    	"module_onu_signals_discovering" => 1,
+    	"module_sfp_discovering" => 1,
+    	"module_fdb_discovering" => 1,
+    	"module_metrics_discovering" => 1,
+    	"module_monitoring" => 1,
+    	"module_port_monitoring" => 1,
+    ],
+];
+';
+	file_put_contents($PATH.'/config/grusher_modules.php', $grusher_modules);
+	$licence_key = $check_lic->result->licence_code;
+	break;
+	case "update":
+	case "update_dev":
+	case "update_test":
+	case "update_release":
+		if (file_exists($PATH .'/config/lic.php')){
+			include($PATH .'/config/lic.php');
+			if(!isset($licence_code)){
+				die("\n\033[31mLicence code not found\033[0m\n");
+			}else{
+			    $licence_key = $licence_code;
+				echo ("\033[32mLicence code is $licence_code\033[0m\n");
+
+                $check_lic = @json_decode(file_get_contents("$UPDATER_URL/updater?key=$licence_key&type=check"));
+        		if (isset($check_lic->status) and ($check_lic->status == 1)){
+        			echo "\n\033[35m=== Creating config folder\033[0m \n";
+        			if (!file_exists($PATH."/config")) {
+        			    mkdir($PATH."/config");
+        			}
+        			echo "\n\033[35m=== Writing Licence\033[0m \n";
+        			$new_version_get = $check_lic->result->new_version;
+					$new_subversion_get = $check_lic->result->new_sub_version;
+        			file_put_contents($PATH.'/config/lic.php', '<?php $licence_code = "'.$check_lic->result->licence_code.'";$licence_type = "'.$check_lic->result->type.'";    $licence_valid = "'.$check_lic->result->valid_to.'";  $licence_isp = "'.$check_lic->result->for_who.'";$country = "'.$check_lic->result->country.'";?>');
+        		}else{
+        			if (isset($check_lic->status) and ($check_lic->status == 0) and isset($check_lic->additional_info)){
+        				die ("\n\n\033[31m".$check_lic->additional_info."\033[0m\n\n");
+        			}else{
+        				die ("\n\033[31mCan't get information from update server\033[0m\n");
+        			}
+        		}
+
+                echo "\n\033[33mLicence Information:\nLicence ISP: ".$check_lic->result->for_who."\nLicence type: ".$check_lic->result->type."\nLicence code: ".$check_lic->result->licence_code."\nLicence IP: ".$check_lic->result->licence_ip."\nLicence valid to: ".$check_lic->result->valid_to."\nLicence Country: ".$check_lic->result->country."\033[0m\n\nPress any key to continue";
+                if($SILENT_UPDATE == 0){
+	                $handle = fopen ("php://stdin","r");
+	                fgets($handle);
+                }
+			}
+		}else{
+			die("\n\033[31mLicence file not found/ Install system first\033[0m\n");
+		}
+	break;
+	default:
+		die("\n\033[31mUnknown command\033[0m\n\n");
+	break;
+}
+echo "\n\033[35m=== Running Winter migrations. Please wait... It can be long \033[0m\n";
+echo shell_exec ("php artisan winter:up");
+
+echo "\n\033[35m=== Getting new vendor files \033[0m\n";
+echo "\n\033[35m======= mjaschen/phpgeo \033[0m\n";
+echo shell_exec ("$composer_path require mjaschen/phpgeo");
+#echo "\n\033[35m======= mitoteam/jpgraph \033[0m\n";
+#echo shell_exec ("$composer_path require mitoteam/jpgraph");
+
+echo "\n\033[35m=== Updating vendor files \033[0m\n";
+echo shell_exec ("$composer_path update");
+
+
+echo "\n\033[35m=== Downloading files \033[0m\n";
+$file_name = generateRandomString(44).".zip";
+$send_update_type = 'update';
+if ($whattodo == "update_dev"){
+    $send_update_type = 'update_dev';
+}
+if ($whattodo == "update_test"){
+    $send_update_type = 'update_test';
+}
+if ($whattodo == "update_release"){
+    $send_update_type = 'update_release';
+}
+
+
+shell_exec("$wget_path -q -O $file_name '".$UPDATER_URL."/updater?key=".$licence_key."&type=".$send_update_type."'");
+echo "\n\033[35m=== Extracting files \033[0m\n";
+shell_exec("$unzip_path -o '$file_name'");
+@unlink($file_name);
+
+echo "\n\033[35m=== Removing OLD PLUGINS \033[0m\n";
+echo "\n\033[35m=== May be error. Just skip It \033[0m\n";
+$check_plugin1 = shell_exec ("php artisan plugin:list");
+if(preg_match("/Gviabcua.Backup/i", $check_plugin1)){
+    echo "\n\033[35m===   Removing Gviabcua.Backup \033[0m\n\n";
+    echo shell_exec ("php artisan plugin:remove Gviabcua.Backup -f");
+}
+
+
+
+
+sleep(1);
+echo "\n\033[35m=== Running Grusher migrations. Please wait... It can be long \033[0m\n\n";
+echo shell_exec ("php artisan winter:up");
+
+echo "\n\033[35m=== Updating device base \033[0m";
+if(($whattodo == "update_dev") or ($whattodo == "update_test")){
+echo "\n\033[35m=== Updating DEV device base \033[0m";
+    echo shell_exec ("php artisan grusher:updater device_base_dev");
+}else{
+    echo shell_exec ("php artisan grusher:updater device_base");
+}
+echo "\n\033[35m=== Updating Languages base \033[0m";
+echo shell_exec ("php artisan grusher:updater languages");
+
+echo "\n\033[35m=== Updating AS bases \033[0m";
+echo shell_exec ("php artisan grusher:updater asn_base");
+
+echo "\n\033[35m=== Updating versions \033[0m";
+echo shell_exec ("php artisan grusher:updater set_version --setdata=$new_version_get");
+echo "\n\033[35m=== Updating subversions \033[0m";
+echo shell_exec ("php artisan grusher:updater set_subversion --setdata=$new_subversion_get");
+echo "\n\033[35m=== Updating enviroment \033[0m";
+echo shell_exec ("php artisan grusher:updater set_env");
+
+
+
+
+
+echo "\n\033[35m=== Updating Licence status \033[0m\n";
+@file_get_contents("$UPDATER_URL/updater?key=$licence_key&type=check&version=$new_version_get&subversion=$new_subversion_get");
+
+if(($whattodo == "update_dev") or ($whattodo == "update_test")){
+    echo "\n\033[35m=== Updating dev version status - IS DEV\033[0m\n";
+    echo shell_exec ("php artisan grusher:updater set_is_dev_version --setdata=1");
+}else if ($whattodo == "update"){
+    echo "\n\033[35m=== Updating dev version status  - IS NOT DEV\033[0m\n";
+    echo shell_exec ("php artisan grusher:updater set_is_dev_version --setdata=0");
+}
+
+echo "\n\033[35m=== Cleaning old files \033[0m";
+
+echo "\n\033[35m - Winter Demo Files \033[0m";
+shell_exec("rm -rf ".$PATH."/themes/demo/");
+shell_exec("rm -rf ".$PATH."/plugins/winter/demo/");
+
+echo "\n\033[35m - Themes \033[0m";
+echo "\n\033[35m -- deleting ckeditor4 \033[0m";
+shell_exec("rm -rf ".$PATH."/themes/netcontrol/assets/vendor/ckeditor4");
+#shell_exec("rm -rf ".$PATH."/themes/netcontrol/assets/vendor/gridstack.js");
+#shell_exec("rm -rf ".$PATH."/themes/netcontrol/assets/vendor/gridstack_new/gridstack-extra.css");
+#shell_exec("rm -rf ".$PATH."/themes/netcontrol/assets/vendor/gridstack_new/gridstack-extra.min.css");
+
+echo "\n\033[35m -- deleting popper \033[0m";
+shell_exec("rm -rf ".$PATH."/themes/netcontrol/assets/vendor/bootstrap-5/popper.min.js");
+shell_exec("rm -rf ".$PATH."/themes/netcontrol/assets/vendor/bootstrap-5/popper.min.js.map");
+echo "\n\033[35m -- deleting moved chartjs-plugin-trendline \033[0m";
+shell_exec("rm -rf ".$PATH."/themes/netcontrol/assets/vendor/other/chartjs-plugin-trendline.js");
+
+echo "\n\033[35m - Plugins \033[0m";
+echo "\n\033[35m -- deleting old and unneeded files\033[0m";
+shell_exec("rm -rf ".$PATH."/plugins/gviabcua/netcontrol/models/IpAddressTable.php");
+
+echo "\n\033[35m - GITs \033[0m";
+shell_exec("rm -rf ".$PATH."/plugins/gviabcua/adminer/.git/");
+shell_exec("rm -rf ".$PATH."/plugins/gviabcua/backup/.git/");
+shell_exec("rm -rf ".$PATH."/plugins/gviabcua/billing/.git/");
+shell_exec("rm -rf ".$PATH."/plugins/gviabcua/cron/.git/");
+shell_exec("rm -rf ".$PATH."/plugins/gviabcua/devtools/.git/");
+shell_exec("rm -rf ".$PATH."/plugins/gviabcua/userpermissions/.git/");
+shell_exec("rm -rf ".$PATH."/plugins/gviabcua/websockets/.git/");
+
+echo "\n\033[35m=== Cleaning cache \033[0m\n";
+echo shell_exec ("php artisan cache:clear");
+echo shell_exec ("php artisan view:clear");
+echo shell_exec ("php artisan route:clear");
+
+if ($whattodo == "update"){
+    echo "\033[32mRun after update\033[0m\n\n\033[35msudo kill -9 $(pgrep -f ws_server_load.php)\nsudo kill -9 $(pgrep -f websockets:run)\nsudo kill -9 $(pgrep -f notify_service.php)\n\nRecomendation: restart your web-server (apache, ngnix and php-fpm)\n\n\033[0m";
+}
+
+echo "\n\033[32mDONE! Glory to Ukraine!   @gviabcua | support $SUPPORT_LINK\033[0m\n\n";
+echo "\033[94m==========================================================================\033[0m\n";
+echo "\033[93m==========================================================================\033[0m\n";
+
+
+
+
+// function
+function clear_cache(){
+	echo "\n=== Cleaning cache \n";
+	echo shell_exec ("php $PATH/artisan cache:clear");
+	echo shell_exec ("php $PATH/artisan view:clear");
+	echo shell_exec ("php $PATH/artisan route:clear");
+}
+
+function close($message = ""){
+	echo "END SCRIPT...\n\n $message \n\n";
+	exit;
+}
+function generateRandomString($length = 32) {
+    $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    $charactersLength = strlen($characters);
+    $randomString = '';
+    for ($i = 0; $i < $length; $i++) {
+        $randomString .= $characters[random_int(0, $charactersLength - 1)];
+    }
+    return $randomString;
+}
+?>

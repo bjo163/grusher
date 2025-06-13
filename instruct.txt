@@ -1,0 +1,13 @@
+buatkan docker compose dan docker filenya 
+https://grusher.gviabcua.in.ua/books/grusher-documentation/chapter/system-installation
+https://grusher.gviabcua.in.ua/books/grusher-documentation/page/system-requirements
+https://grusher.gviabcua.in.ua/books/grusher-documentation/page/installation-step-1-system-preparation
+https://grusher.gviabcua.in.ua/books/grusher-documentation/page/installation-step-2-installing-core
+https://grusher.gviabcua.in.ua/books/grusher-documentation/page/installation-step-3-installing-grusher
+https://grusher.gviabcua.in.ua/books/grusher-documentation/page/installation-step-4-other-settings
+https://grusher.gviabcua.in.ua/books/grusher-documentation/page/after-installation-activating-licence
+
+saat 
+sudo -u www-data php grusher_installer.php
+
+biasanya disuruh masukan license 
