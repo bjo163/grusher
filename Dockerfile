@@ -23,6 +23,12 @@ RUN apt-get update && apt-get install -y \
     cron \
     iputils-ping \
     netcat-openbsd \
+    # Python dependencies for Grusher
+    python3.11 \
+    python3.11-venv \
+    python3-pip \
+    python3.11-distutils \
+    virtualenv \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Composer manually
@@ -54,9 +60,20 @@ RUN pecl install imagick \
 RUN pecl install memcached \
     && docker-php-ext-enable memcached
 
-# Install xmlrpc via PECL
-RUN pecl install xmlrpc \
+# Install xmlrpc via PECL (specific beta version)
+RUN pecl install channel://pecl.php.net/xmlrpc-1.0.0RC3 \
     && docker-php-ext-enable xmlrpc
+
+# Setup Python Virtual Environment for Grusher
+RUN mkdir -p /opt/python3.11/env
+RUN python3.11 -m venv /opt/python3.11/env
+RUN /opt/python3.11/env/bin/pip install --upgrade pip six wheel && \
+    /opt/python3.11/env/bin/pip install --upgrade \
+    git+https://github.com/gviabcua/netmiko.git \
+    ping3 \
+    requests \
+    psutil \
+    zipp
 
 # Enable Apache mod_rewrite
 RUN a2enmod rewrite
