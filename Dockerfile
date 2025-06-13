@@ -41,10 +41,8 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     ftp \
     mbstring \
     xmlrpc \
-    snmp \ # Added snmp extension
-    curl   # Added curl extension
-    # soap # Added soap as xmlrpc often goes with it, can be removed if not strictly needed by grusher
-    # bcmath # Often useful, can be removed if not strictly needed
+    snmp \
+    curl
 
 # Install imagick
 RUN pecl install imagick \
