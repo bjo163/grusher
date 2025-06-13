@@ -42,7 +42,6 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     fileinfo \
     ftp \
     mbstring \
-    xmlrpc \
     snmp \
     curl
 
@@ -54,6 +53,9 @@ RUN pecl install imagick \
 RUN pecl install memcached \
     && docker-php-ext-enable memcached
 
+# Install xmlrpc via PECL
+RUN pecl install xmlrpc \
+    && docker-php-ext-enable xmlrpc
 
 # Enable Apache mod_rewrite
 RUN a2enmod rewrite
