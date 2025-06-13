@@ -15,6 +15,7 @@ RUN apt-get update && apt-get install -y \
     libxslt-dev \
     libxml2-dev \
     libcurl4-openssl-dev \
+    libonig-dev \
     unzip \
     git \
     wget \
